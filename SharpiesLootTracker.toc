@@ -1,0 +1,16 @@
+## Interface: 11508, 11509, 16001, 20505, 20506, 38000, 40402, 50504, 120005, 120007
+## Title: |cff00ccffSharpie's Loot Tracker|r
+## Notes: See what your farm is really worth: coin, items by category, and gold per hour.
+## Author: SuperSharpie
+## Version: 0.2.0
+## IconTexture: Interface\Icons\INV_Misc_Coin_02
+## SavedVariables: SharpiesLootTrackerDB
+## SavedVariablesPerCharacter: SharpiesLootTrackerCharDB
+## OptionalDeps: TradeSkillMaster, Auctionator, Auc-Advanced
+
+Compat.lua
+Core.lua
+Categories.lua
+Pricing.lua
+Tracker.lua
+UI.lua
