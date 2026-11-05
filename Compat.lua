@@ -44,7 +44,9 @@ function Compat.IsReadableString(v)
 end
 
 -- Coin text in the same style as the mockup: 12g 05s 03c, with colored unit letters.
-local GOLD, SILVER, COPPER = "|cffffd700g|r", "|cffc7c7cfs|r", "|cffeda55fc|r"
+-- The game's own coin letters, in the client's language
+local G_SYM, S_SYM, C_SYM = GOLD_AMOUNT_SYMBOL or "g", SILVER_AMOUNT_SYMBOL or "s", COPPER_AMOUNT_SYMBOL or "c"
+local GOLD, SILVER, COPPER = "|cffffd700" .. G_SYM .. "|r", "|cffc7c7cf" .. S_SYM .. "|r", "|cffeda55f" .. C_SYM .. "|r"
 local function Group(n)
     if BreakUpLargeNumbers then return BreakUpLargeNumbers(n) end
     return tostring(n)
@@ -75,9 +77,9 @@ function Compat.FormatMoneyPlain(copper)
     if negative then copper = -copper end
     local g, s, c = floor(copper / 10000), floor((copper % 10000) / 100), copper % 100
     local parts = {}
-    if g > 0 then parts[#parts + 1] = g .. "g" end
-    if s > 0 then parts[#parts + 1] = s .. "s" end
-    if c > 0 or #parts == 0 then parts[#parts + 1] = c .. "c" end
+    if g > 0 then parts[#parts + 1] = g .. G_SYM end
+    if s > 0 then parts[#parts + 1] = s .. S_SYM end
+    if c > 0 or #parts == 0 then parts[#parts + 1] = c .. C_SYM end
     return (negative and "-" or "") .. table.concat(parts, " ")
 end
 

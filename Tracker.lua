@@ -69,7 +69,7 @@ local function Record(s, link, qty)
     while #s.entries > ns.db.maxEntries do table.remove(s.entries, 1) end
 
     if ns.db.alertValue > 0 and unit >= ns.db.alertValue then
-        ns.Alert("Big drop: " .. link .. (qty > 1 and (" x" .. qty) or "") .. " (" .. Compat.FormatMoney(unit) .. " each)")
+        ns.Alert(string.format(ns.L["Big drop: %s%s (%s each)"], link, qty > 1 and (" x" .. qty) or "", Compat.FormatMoney(unit)))
     end
 
     if ns.UI then ns.UI.Refresh() end
@@ -199,15 +199,26 @@ local function NoteVendorSpending()
     moneyAtVendor = now
 end
 
--- Kills: your group's killing blows on NPCs, while the session runs
-local function NoteKill()
-    if not CombatLogGetCurrentEventInfo then return end
-    local _, sub, _, _, _, _, _, destGUID = CombatLogGetCurrentEventInfo()
-    if sub ~= "PARTY_KILL" or not Compat.IsReadableString(destGUID) then return end
+-- Kills, while the session runs: counted from the "X dies, you gain N experience" message (every kill that gives you
+-- experience, yours or your group's). WoW Forever forbids addons from registering COMBAT_LOG_EVENT_UNFILTERED
+-- (ADDON_ACTION_FORBIDDEN at load), so the combat log's PARTY_KILL can't be used. Kills that give no experience
+-- (grey mobs, level 60) aren't counted.
+local function FormatToPattern(fmt)
+    if type(fmt) ~= "string" or fmt == "" then return nil end
+    local p = fmt:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1")
+    p = p:gsub("%%%%%d%%%$s", "(.-)"):gsub("%%%%%d%%%$d", "(%%d+)") -- positional (%1$s)
+    p = p:gsub("%%%%s", "(.-)"):gsub("%%%%d", "(%%d+)")
+    -- koKR particles and plural tokens ("|1...;...;", "|4...;"): the printed text holds only one form
+    p = p:gsub("%(%.%-%)|%d[^;:|]*;[^;|]*;", "(.-)"):gsub("%(%.%-%)|%d[^;|]*;", "(.-)")
+    p = p:gsub("|%d[^;:|]*;[^;|]*;", ".-"):gsub("|%d[^;|]*;", ".-")
+    return "^" .. p
+end
+local KILL_PATTERN = FormatToPattern(COMBATLOG_XPGAIN_FIRSTPERSON) or "^(.-) dies, you gain (%d+) experience"
+
+local function NoteKill(text)
+    if not Compat.IsReadableString(text) or not text:match(KILL_PATTERN) then return end
     local s = ns.char and ns.char.session
-    if s and s.running and (destGUID:find("^Creature%-") or destGUID:find("^Vehicle%-")) then
-        s.kills = s.kills + 1
-    end
+    if s and s.running then s.kills = s.kills + 1 end
 end
 
 -- Bag fill rate: count slots that fill up while farming (not while shopping or at the bank)
@@ -217,7 +228,7 @@ local function NoteBagSlots()
     local s = ns.char and ns.char.session
     if lastFree and free < lastFree and s and s.running and not next(blockers) then
         s.slotsUsed = s.slotsUsed + (lastFree - free)
-        if free == 0 then ns.Alert("Bags full!") end
+        if free == 0 then ns.Alert(ns.L["Bags full!"]) end
     end
     lastFree = free
     if ns.UI then ns.UI.RefreshStats() end
@@ -238,12 +249,12 @@ SafeRegister("LOOT_OPENED")
 SafeRegister("LOOT_CLOSED")
 SafeRegister("PLAYER_MONEY")
 SafeRegister("BAG_UPDATE_DELAYED")
-SafeRegister("COMBAT_LOG_EVENT_UNFILTERED")
+SafeRegister("CHAT_MSG_COMBAT_XP_GAIN")
 for event in pairs(BLOCK_OPEN) do SafeRegister(event) end
 for event in pairs(BLOCK_CLOSE) do SafeRegister(event) end
 
 tracker:SetScript("OnEvent", function(_, event, arg1, arg2, arg3)
-    if event == "COMBAT_LOG_EVENT_UNFILTERED" then NoteKill() return end
+    if event == "CHAT_MSG_COMBAT_XP_GAIN" then NoteKill(arg1) return end
     if BLOCK_OPEN[event] then
         blockers[BLOCK_OPEN[event]] = true
         if event == "MERCHANT_SHOW" then moneyAtVendor = GetMoney() end

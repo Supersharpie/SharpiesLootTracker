@@ -1,13 +1,30 @@
-## Interface: 11508, 11509, 16001, 20505, 20506, 38000, 40402, 50504, 120005, 120007
+## Interface: 16001
 ## Title: |cff00ccffSharpie's Loot Tracker|r
 ## Notes: See what your farm is really worth: coin, items by category, and gold per hour.
+## Notes-deDE: Zeigt, was dein Farmen wirklich wert ist: Münzen, Gegenstände nach Kategorie und Gold pro Stunde.
+## Notes-esES: Mira lo que vale de verdad tu farmeo: monedas, objetos por categoría y oro por hora.
+## Notes-esMX: Mira lo que vale de verdad tu farmeo: monedas, objetos por categoría y oro por hora.
+## Notes-frFR: Voyez ce que vaut vraiment votre farm : pièces, objets par catégorie et or par heure.
+## Notes-ptBR: Veja quanto vale de verdade o seu farm: moedas, itens por categoria e ouro por hora.
+## Notes-ruRU: Узнайте, сколько на самом деле стоит ваш фарм: монеты, предметы по категориям и золото в час.
+## Notes-koKR: 파밍의 실제 가치를 확인하세요: 동전, 분류별 아이템, 시간당 골드.
+## Notes-zhTW: 看看你打寶的真正價值：錢幣、分類物品與每小時金幣。
 ## Author: SuperSharpie
-## Version: 0.2.0
+## Version: 1.0.0
 ## IconTexture: Interface\Icons\INV_Misc_Coin_02
 ## SavedVariables: SharpiesLootTrackerDB
 ## SavedVariablesPerCharacter: SharpiesLootTrackerCharDB
 ## OptionalDeps: TradeSkillMaster, Auctionator, Auc-Advanced
 
+Locale.lua
+Locales\deDE.lua
+Locales\esES.lua
+Locales\esMX.lua
+Locales\frFR.lua
+Locales\ptBR.lua
+Locales\ruRU.lua
+Locales\koKR.lua
+Locales\zhTW.lua
 Compat.lua
 Core.lua
 Categories.lua

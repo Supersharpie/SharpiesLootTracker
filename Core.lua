@@ -1,4 +1,5 @@
 local ADDON, ns = ...
+local L = ns.L
 local Compat = ns.Compat
 
 SharpiesLootTracker = ns -- global handle for debugging (/dump SharpiesLootTracker.char.session)
@@ -119,7 +120,7 @@ function ns.AutoPause(reason)
     s.elapsed = s.elapsed + (stop - ns.runStartedAt)
     s.running, s.autoPaused = false, true
     ns.runStartedAt = nil
-    ns.Print("Paused (" .. reason .. "). Time since your last loot isn't counted; loot something to carry on.")
+    ns.Print(string.format(L["Paused (%s). Time since your last loot isn't counted; loot something to carry on."], reason))
     if ns.UI then ns.UI.Refresh() end
 end
 
@@ -196,7 +197,7 @@ end
 
 local function ItemText(id)
     local _, link = Compat.GetItemInfo(id)
-    return link or ("item " .. id)
+    return link or string.format(L["item %d"], id)
 end
 
 -- Never record this item again and take it out of the current session
@@ -209,7 +210,7 @@ function ns.Ignore(linkOrID)
         if Compat.GetItemInfoInstant(e.link) == id then remove[#remove + 1] = e.id end
     end
     for _, entryID in ipairs(remove) do ns.RemoveEntry(entryID) end
-    ns.Print("Ignoring " .. ItemText(id) .. ". Undo with /slt unignore " .. id)
+    ns.Print(string.format(L["Ignoring %s. Undo with /slt unignore %d"], ItemText(id), id))
 end
 
 -- =============================================================
@@ -220,12 +221,12 @@ function ns.ReportLine()
     local net = t.coin + t.value - t.costs
     local secs = math.floor(ns.GetElapsed())
     local zone = GetRealZoneText and GetRealZoneText() or ""
-    local line = string.format("Loot Tracker: %dh %02dm", math.floor(secs / 3600), math.floor((secs % 3600) / 60))
-    if zone ~= "" then line = line .. " in " .. zone end
+    local line = string.format(L["Loot Tracker: %dh %02dm"], math.floor(secs / 3600), math.floor((secs % 3600) / 60))
+    if zone ~= "" then line = line .. string.format(L[" in %s"], zone) end
     line = line .. ", " .. Compat.FormatMoneyPlain(net)
     local per = ns.GetPerHour(net)
-    if per then line = line .. " (" .. Compat.FormatMoneyPlain(per) .. " per hour)" end
-    if t.priciestLink then line = line .. ", best drop " .. t.priciestLink end
+    if per then line = line .. string.format(L[" (%s per hour)"], Compat.FormatMoneyPlain(per)) end
+    if t.priciestLink then line = line .. string.format(L[", best drop %s"], t.priciestLink) end
     return line
 end
 
@@ -243,13 +244,13 @@ local function Report(rest)
         -- No channel: your group if you're in one, otherwise just you
         chatType = (IsInRaid and IsInRaid()) and "RAID" or ((IsInGroup and IsInGroup()) and "PARTY" or nil)
     elseif not chatType and where ~= "self" then
-        ns.Print("Unknown channel. Use say, party, guild, raid, instance, w <name> or self.")
+        ns.Print(L["Unknown channel. Use say, party, guild, raid, instance, w <name> or self."])
         return
     end
     if not chatType then ns.Print(line) return end
-    if chatType == "WHISPER" and target == "" then ns.Print("Usage: /slt report w <name>") return end
+    if chatType == "WHISPER" and target == "" then ns.Print(L["Usage: /slt report w <name>"]) return end
     local ok = pcall(Compat.SendChatMessage, line, chatType, nil, chatType == "WHISPER" and target or nil)
-    if not ok then ns.Print("Couldn't send that to " .. where .. ". " .. line) end
+    if not ok then ns.Print(string.format(L["Couldn't send that to %s. %s"], where, line)) end
 end
 
 -- =============================================================
@@ -293,13 +294,13 @@ loader:SetScript("OnEvent", function(_, event, arg1)
         C_Timer.NewTicker(5, function()
             local idle = ns.db.idleMinutes
             if ns.char.session.running and idle > 0 and ns.lastLootAt and GetTime() - ns.lastLootAt >= idle * 60 then
-                ns.AutoPause("nothing looted for " .. idle .. " min")
+                ns.AutoPause(string.format(L["nothing looted for %s min"], idle))
             end
         end)
         if ns.UI then ns.UI.Create() end
         loader:UnregisterEvent("ADDON_LOADED")
     elseif event == "PLAYER_FLAGS_CHANGED" and ns.char then
-        if arg1 == "player" and ns.db.idleMinutes > 0 and UnitIsAFK("player") then ns.AutoPause("AFK") end
+        if arg1 == "player" and ns.db.idleMinutes > 0 and UnitIsAFK("player") then ns.AutoPause(L["AFK"]) end
     elseif event == "PLAYER_LOGOUT" and ns.char then
         ns.char.session.elapsed = ns.GetElapsed()
         ns.runStartedAt = nil
@@ -311,24 +312,27 @@ end)
 -- =============================================================
 local SOURCES = { auto = true, tsm = true, auctionator = true, auctioneer = true, vendor = true }
 
+-- on / off for a setting in chat
+local function OnOff(v) return v and L["on"] or L["off"] end
+
 local function Help()
-    ns.Print("v" .. ns.VERSION .. " commands:")
-    print("  /slt - show/hide the window")
-    print("  /slt compact - switch between the full window and a one-line bar (or double-click the header)")
+    ns.Print(string.format(L["v%s commands:"], ns.VERSION))
+    print("  " .. L["/slt - show/hide the window"])
+    print("  " .. L["/slt compact - switch between the full window and a one-line bar (or double-click the header)"])
     print("  /slt start | pause | reset")
-    print("  /slt report [say|party|guild|raid|instance|w <name>|self] - post a session summary")
-    print("  /slt source auto|tsm|auctionator|auctioneer|vendor - where item prices come from (now: " .. ns.db.priceSource .. ")")
-    print("  /slt tsm <price string>|default - any TSM custom price (now: " .. ns.db.tsmPriceString .. ")")
-    print("  /slt vendorfloor - toggle never valuing an item below its vendor price (now: " .. tostring(ns.db.neverBelowVendor) .. ")")
-    print("  /slt questgold - toggle counting quest reward gold (now: " .. tostring(ns.db.countQuestMoney) .. ")")
-    print("  /slt autostart - toggle starting a session on the first loot (now: " .. tostring(ns.db.autoStart) .. ")")
-    print("  /slt idle <minutes> - pause after this long without loot or on AFK, 0 = off (now: " .. ns.db.idleMinutes .. ")")
-    print("  /slt costs - toggle taking vendor spending (repairs, food, ammo) off the total (now: " .. tostring(ns.db.countCosts) .. ")")
-    print("  /slt alert <gold> - alert for drops worth at least this each, 0 = off (now: " .. Compat.FormatMoneyPlain(ns.db.alertValue) .. ")")
-    print("  /slt stale <days> - mark Auctionator prices older than this (now: " .. ns.db.staleDays .. ")")
-    print("  /slt ignore [item|clear] - ignore an item, list ignored items, or clear the list")
-    print("  /slt unignore <item> - stop ignoring an item (link or item ID)")
-    print("  /slt questitems - toggle ignoring quest items (now: " .. tostring(ns.db.ignoreQuestItems) .. ")")
+    print("  " .. L["/slt report [say|party|guild|raid|instance|w <name>|self] - post a session summary"])
+    print("  " .. string.format(L["/slt source auto|tsm|auctionator|auctioneer|vendor - where item prices come from (now: %s)"], ns.db.priceSource))
+    print("  " .. string.format(L["/slt tsm <price string>|default - any TSM custom price (now: %s)"], ns.db.tsmPriceString))
+    print("  " .. string.format(L["/slt vendorfloor - toggle never valuing an item below its vendor price (now: %s)"], OnOff(ns.db.neverBelowVendor)))
+    print("  " .. string.format(L["/slt questgold - toggle counting quest reward gold (now: %s)"], OnOff(ns.db.countQuestMoney)))
+    print("  " .. string.format(L["/slt autostart - toggle starting a session on the first loot (now: %s)"], OnOff(ns.db.autoStart)))
+    print("  " .. string.format(L["/slt idle <minutes> - pause after this long without loot or on AFK, 0 = off (now: %s)"], ns.db.idleMinutes))
+    print("  " .. string.format(L["/slt costs - toggle taking vendor spending (repairs, food, ammo) off the total (now: %s)"], OnOff(ns.db.countCosts)))
+    print("  " .. string.format(L["/slt alert <gold> - alert for drops worth at least this each, 0 = off (now: %s)"], Compat.FormatMoneyPlain(ns.db.alertValue)))
+    print("  " .. string.format(L["/slt stale <days> - mark Auctionator prices older than this (now: %s)"], ns.db.staleDays))
+    print("  " .. L["/slt ignore [item|clear] - ignore an item, list ignored items, or clear the list"])
+    print("  " .. L["/slt unignore <item> - stop ignoring an item (link or item ID)"])
+    print("  " .. string.format(L["/slt questitems - toggle ignoring quest items (now: %s)"], OnOff(ns.db.ignoreQuestItems)))
 end
 
 -- Item ID from a pasted link or a plain number
@@ -354,9 +358,9 @@ SlashCmdList.SHARPIESLOOTTRACKER = function(msg)
         rest = rest:lower()
         if SOURCES[rest] then
             ns.db.priceSource = rest
-            ns.Print("Price source: " .. rest .. " (applies to new loot)")
+            ns.Print(string.format(L["Price source: %s (applies to new loot)"], rest))
         else
-            ns.Print("Unknown source. Use auto, tsm, auctionator, auctioneer or vendor.")
+            ns.Print(L["Unknown source. Use auto, tsm, auctionator, auctioneer or vendor."])
         end
     elseif cmd == "tsm" then
         if rest:lower() == "default" then rest = ACCOUNT_DEFAULTS.tsmPriceString end
@@ -367,60 +371,60 @@ SlashCmdList.SHARPIESLOOTTRACKER = function(msg)
                 ok, valid, err = pcall(TSM_API.IsCustomPriceValid, rest)
             end
             if ok and not valid then
-                ns.Print("TSM rejected that price string" .. (err and (": " .. tostring(err)) or "") .. ". Kept: " .. ns.db.tsmPriceString)
+                ns.Print(string.format(L["TSM rejected that price string%s. Kept: %s"], err and (": " .. tostring(err)) or "", ns.db.tsmPriceString))
                 return
             end
             ns.db.tsmPriceString = rest
         end
-        ns.Print("TSM price string: " .. ns.db.tsmPriceString .. " (applies to new loot)")
+        ns.Print(string.format(L["TSM price string: %s (applies to new loot)"], ns.db.tsmPriceString))
     elseif cmd == "vendorfloor" then
         ns.db.neverBelowVendor = not ns.db.neverBelowVendor
-        ns.Print("Never below vendor price: " .. tostring(ns.db.neverBelowVendor))
+        ns.Print(string.format(L["Never below vendor price: %s"], OnOff(ns.db.neverBelowVendor)))
     elseif cmd == "questgold" then
         ns.db.countQuestMoney = not ns.db.countQuestMoney
-        ns.Print("Count quest reward gold: " .. tostring(ns.db.countQuestMoney))
+        ns.Print(string.format(L["Count quest reward gold: %s"], OnOff(ns.db.countQuestMoney)))
     elseif cmd == "autostart" then
         ns.db.autoStart = not ns.db.autoStart
-        ns.Print("Start a session on the first loot: " .. tostring(ns.db.autoStart))
+        ns.Print(string.format(L["Start a session on the first loot: %s"], OnOff(ns.db.autoStart)))
     elseif cmd == "idle" then
         local n = tonumber(rest)
         if n and n >= 0 then ns.db.idleMinutes = n end
-        ns.Print("Idle pause: " .. (ns.db.idleMinutes > 0 and (ns.db.idleMinutes .. " min without loot, or AFK") or "off"))
+        ns.Print(string.format(L["Idle pause: %s"], ns.db.idleMinutes > 0 and string.format(L["%s min without loot, or AFK"], ns.db.idleMinutes) or L["off"]))
     elseif cmd == "costs" then
         ns.db.countCosts = not ns.db.countCosts
-        ns.Print("Take vendor spending off the total: " .. tostring(ns.db.countCosts))
+        ns.Print(string.format(L["Take vendor spending off the total: %s"], OnOff(ns.db.countCosts)))
     elseif cmd == "alert" then
         local g = tonumber(rest)
         if g and g >= 0 then ns.db.alertValue = math.floor(g * 10000 + 0.5) end
-        ns.Print("Drop alert: " .. (ns.db.alertValue > 0 and (Compat.FormatMoneyPlain(ns.db.alertValue) .. " or more each") or "off"))
+        ns.Print(string.format(L["Drop alert: %s"], ns.db.alertValue > 0 and string.format(L["%s or more each"], Compat.FormatMoneyPlain(ns.db.alertValue)) or L["off"]))
     elseif cmd == "stale" then
         local n = tonumber(rest)
         if n and n > 0 then ns.db.staleDays = n end
-        ns.Print("Auctionator prices older than " .. ns.db.staleDays .. " days are marked")
+        ns.Print(string.format(L["Auctionator prices older than %s days are marked"], ns.db.staleDays))
     elseif cmd == "questitems" then
         ns.db.ignoreQuestItems = not ns.db.ignoreQuestItems
-        ns.Print("Ignore quest items: " .. tostring(ns.db.ignoreQuestItems))
+        ns.Print(string.format(L["Ignore quest items: %s"], OnOff(ns.db.ignoreQuestItems)))
     elseif cmd == "ignore" then
         if rest:lower() == "clear" then
             wipe(ns.db.ignore)
-            ns.Print("Ignore list cleared")
+            ns.Print(L["Ignore list cleared"])
         elseif ParseItem(rest) then
             ns.Ignore(ParseItem(rest))
         else
             local any = false
             for id in pairs(ns.db.ignore) do
-                if not any then ns.Print("Ignored items:") any = true end
+                if not any then ns.Print(L["Ignored items:"]) any = true end
                 print("  " .. ItemText(id) .. " (" .. id .. ")")
             end
-            if not any then ns.Print("No ignored items. Ctrl-right-click a row in the list to ignore an item.") end
+            if not any then ns.Print(L["No ignored items. Ctrl-right-click a row in the list to ignore an item."]) end
         end
     elseif cmd == "unignore" then
         local id = ParseItem(rest)
         if id and ns.db.ignore[id] then
             ns.db.ignore[id] = nil
-            ns.Print("No longer ignoring " .. ItemText(id))
+            ns.Print(string.format(L["No longer ignoring %s"], ItemText(id)))
         else
-            ns.Print("That item isn't ignored. /slt ignore lists them.")
+            ns.Print(L["That item isn't ignored. /slt ignore lists them."])
         end
     else
         Help()

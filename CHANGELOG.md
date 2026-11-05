@@ -1,8 +1,11 @@
 # Sharpie's Loot Tracker - Version History
 
-## 🚀 v0.2.0
+## 🚀 v1.0.0
+
+First public release, for WoW Forever.
 
 ### ✨ New
+- **Translations**: German, Spanish (Spain and Latin America), French, Brazilian Portuguese, Russian, Korean and Traditional Chinese. Coin letters use the game's own.
 - **New look**: flat dark window with your class colour as the accent, same style as Sharpie's Gear Judge. GPH is the big number, with the rest grouped into Rate, Earnings and Session. A status light shows Running, Idle or Paused.
 - **New tabs**: All, Mats, Gear, Junk, Other, each with an item count. Your current session carries over.
 - **AH vs vendor**: the All tab splits item value into what's priced from the auction house and what's vendor value.
@@ -23,6 +26,7 @@
 - **Quest gold**: can't be counted twice if a client also shows it as a money message.
 - **Lost loot**: items the game hadn't loaded yet were dropped after ~5 seconds; they now wait and always count.
 - **Double counting**: what you get from disenchanting, prospecting, milling or opening clams and lockboxes no longer counts on top of the item it came from.
+- **Error on login (WoW Forever)**: the tracker no longer listens to the combat log, which Forever blocks for addons. Kills now come from the experience message, so kills that give no experience (grey mobs, level 60) aren't counted.
 
 ## 🚀 v0.1.1
 

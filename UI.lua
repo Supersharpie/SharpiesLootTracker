@@ -1,4 +1,5 @@
 local _, ns = ...
+local L = ns.L
 local Compat = ns.Compat
 
 local UI = {}
@@ -121,10 +122,10 @@ local function StateOf(s)
 end
 
 local function BagsText(free)
-    if free == 0 then return "|cffff736bfull|r" end
-    local text = free .. " free"
+    if free == 0 then return "|cffff736b" .. L["full"] .. "|r" end
+    local text = string.format(L["%d free"], free)
     local mins = ns.GetBagsFullMinutes(free)
-    if mins then text = text .. Muted(string.format(" (~%dm)", math.floor(mins + 0.5))) end
+    if mins then text = text .. Muted(" " .. string.format(L["(~%dm)"], math.floor(mins + 0.5))) end
     return text
 end
 
@@ -172,7 +173,7 @@ local function CreateHeader()
     compactText:SetPoint("LEFT", stateText, "RIGHT", 2, 0)
     SetColor(compactText, T.Value)
 
-    local close = IconButton(header, "Hide (type /slt to show again)")
+    local close = IconButton(header, L["Hide (type /slt to show again)"])
     close:SetPoint("RIGHT", -4, 0)
     close.text = close:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     close.text:SetPoint("CENTER")
@@ -181,7 +182,7 @@ local function CreateHeader()
     close:SetScript("OnClick", function() UI.SetShown(false) end)
 
     -- Bar icon = shrink to the compact bar; box icon = back to the full window
-    compactBtn = IconButton(header, "Compact bar / full window (or double-click the header)")
+    compactBtn = IconButton(header, L["Compact bar / full window (or double-click the header)"])
     compactBtn:SetPoint("RIGHT", close, "LEFT", -2, 0)
     compactBtn.bar = Solid(compactBtn, "ARTWORK", T.Muted)
     compactBtn.bar:SetSize(8, 2)
@@ -228,7 +229,7 @@ local function CreateTabs()
         tab.key = info.key
         Solid(tab, "HIGHLIGHT", { 1, 1, 1 }, 0.04):SetAllPoints()
         tab.text = tab:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-        tab.text:SetText(info.label)
+        tab.text:SetText(L[info.label])
         -- Item count badge next to the label
         tab.badge = CreateFrame("Frame", nil, tab)
         tab.badge:SetHeight(12)
@@ -285,10 +286,10 @@ local LAYOUT = {
 
 -- Hover help for numbers that need explaining
 local STAT_HINTS = {
-    GPH = "Estimated gold per hour after costs, over the whole session.\nShown after the first 2 minutes.",
-    ["Per kill"] = "Coin and items per kill (your group's killing blows).",
-    Costs = "Money spent at vendors this session (repairs, food, ammo).\n/slt costs turns this off.",
-    Bags = "Free bag slots, and roughly how long until they're full\nat this session's pace.",
+    GPH = L["Estimated gold per hour after costs, over the whole session.\nShown after the first 2 minutes."],
+    ["Per kill"] = L["Coin and items per kill (kills that give you experience, yours or your group's)."],
+    Costs = L["Money spent at vendors this session (repairs, food, ammo).\n/slt costs turns this off."],
+    Bags = L["Free bag slots, and roughly how long until they're full\nat this session's pace."],
 }
 
 local secPool, rowPool, statRow = {}, {}, {}
@@ -343,7 +344,7 @@ local function CreateStats()
     SetColor(big.value, T.Gold)
     big.unit = big:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     big.unit:SetPoint("BOTTOMLEFT", big.value, "BOTTOMRIGHT", 4, 2)
-    big.unit:SetText("per hour")
+    big.unit:SetText(L["per hour"])
     SetColor(big.unit, T.Muted)
     big.hint = STAT_HINTS.GPH
     big:EnableMouse(true)
@@ -369,7 +370,7 @@ local function LayoutStats(kind)
             nSec = nSec + 1
             local sec = secPool[nSec] or NewSection()
             secPool[nSec] = sec
-            sec:SetText(item[2]:upper())
+            sec:SetText(L[item[2]]:upper())
             SetColor(sec, T[item[3]])
             sec:ClearAllPoints()
             sec:SetPoint("TOPLEFT", stats, "TOPLEFT", 0, -y)
@@ -389,7 +390,7 @@ local function LayoutStats(kind)
             nRow = nRow + 1
             local row = rowPool[nRow] or NewRow()
             rowPool[nRow] = row
-            row.label:SetText(item[2])
+            row.label:SetText(L[item[2]])
             row.hint = STAT_HINTS[item[2]]
             row:ClearAllPoints()
             row:SetPoint("TOPLEFT", stats, "TOPLEFT", 0, -y)
@@ -404,7 +405,7 @@ end
 -- =============================================================
 -- Loot list
 -- =============================================================
-local SOURCE_NAMES = { vendor = "vendor", tsm = "TSM", auctionator = "Auctionator", auctioneer = "Auctioneer" }
+local SOURCE_NAMES = { vendor = L["vendor"], tsm = "TSM", auctionator = "Auctionator", auctioneer = "Auctioneer" }
 
 local function VisibleRowCount()
     return math.max(1, math.floor((listFrame:GetHeight() - 4) / ROW_H))
@@ -435,11 +436,11 @@ local function CreateListRow(i)
         local e = self.entry
         if not e then return end
         ShowItemTooltip(self, e.link)
-        local price = "Price: " .. (SOURCE_NAMES[e.source] or e.source or "?")
-        if e.age then price = price .. string.format(" (%d day%s old)", e.age, e.age == 1 and "" or "s") end
+        local price = string.format(L["Price: %s"], SOURCE_NAMES[e.source] or e.source or "?")
+        if e.age then price = price .. " " .. string.format(e.age == 1 and L["(%d day old)"] or L["(%d days old)"], e.age) end
         GameTooltip:AddLine(" ")
         GameTooltip:AddLine(price, 0.6, 0.8, 1)
-        GameTooltip:AddLine("Right-click: remove   Ctrl-right-click: always ignore", 0.5, 0.5, 0.5)
+        GameTooltip:AddLine(L["Right-click: remove   Ctrl-right-click: always ignore"], 0.5, 0.5, 0.5)
         GameTooltip:Show()
     end)
     row:SetScript("OnLeave", HideTooltip)
@@ -471,7 +472,7 @@ local function CreateList()
     listRows = {}
     emptyText = listFrame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     emptyText:SetPoint("CENTER")
-    emptyText:SetText("Nothing looted yet")
+    emptyText:SetText(L["Nothing looted yet"])
 end
 
 -- =============================================================
@@ -519,11 +520,11 @@ function UI.Create()
     CreateStats()
     CreateList()
 
-    startBtn = FlatButton(body, "Start", 84, 20)
+    startBtn = FlatButton(body, L["Start"], 84, 20)
     startBtn:SetPoint("BOTTOMLEFT", 8, 7)
     startBtn:SetScript("OnClick", ns.Toggle)
 
-    local resetBtn = FlatButton(body, "Reset", 84, 20)
+    local resetBtn = FlatButton(body, L["Reset"], 84, 20)
     resetBtn:SetPoint("LEFT", startBtn, "RIGHT", 6, 0)
     resetBtn:SetScript("OnClick", function()
         if IsShiftKeyDown() then ns.Reset() return end
@@ -531,7 +532,7 @@ function UI.Create()
     end)
 
     StaticPopupDialogs["SHARPIESLOOTTRACKER_RESET"] = {
-        text = "Reset the current loot session?",
+        text = L["Reset the current loot session?"],
         button1 = YES, button2 = NO,
         OnAccept = ns.Reset,
         timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
@@ -595,7 +596,7 @@ function UI.RefreshStats()
     local s = ns.char.session
     local state = STATES[StateOf(s)]
     dot:SetColorTexture(state.color[1], state.color[2], state.color[3], 1)
-    stateText:SetText(state.label:upper())
+    stateText:SetText(L[state.label]:upper())
     clock:SetText(Compat.FormatTime(ns.GetElapsed()))
 
     local fm = Compat.FormatMoney
@@ -609,7 +610,7 @@ function UI.RefreshStats()
     local free = ns.GetFreeBagSlots()
 
     if ns.char.window.compact then
-        compactText:SetText(Muted("·  ") .. rate(net) .. Muted("/h  ·  Bags ") .. BagsText(free))
+        compactText:SetText(Muted("·  ") .. rate(net) .. Muted(L["/h"] .. "  ·  " .. L["Bags"] .. " ") .. BagsText(free))
         return
     end
 
@@ -630,7 +631,7 @@ function UI.RefreshStats()
         set("Gold", fm(all.coin))
         set("Items", fm(all.value) .. Muted(" (" .. all.count .. ")"))
         set("Costs", all.costs > 0 and fm(-all.costs) or Muted("--"))
-        split:SetText("AH " .. fm(all.ahValue) .. "   ·   Vendor " .. fm(all.value - all.ahValue))
+        split:SetText(L["AH"] .. " " .. fm(all.ahValue) .. "   ·   " .. L["Vendor"] .. " " .. fm(all.value - all.ahValue))
         set("Bags", BagsText(free))
     else
         big.value:SetText(rate(t.value))
@@ -679,7 +680,7 @@ end
 function UI.Refresh()
     if not frame then return end
     local s = ns.char.session
-    startBtn.text:SetText(s.running and "Pause" or ((s.elapsed > 0) and "Continue" or "Start"))
+    startBtn.text:SetText(s.running and L["Pause"] or ((s.elapsed > 0) and L["Continue"] or L["Start"]))
     RefreshTabs()
     UI.RefreshStats()
     UI.RefreshList()
