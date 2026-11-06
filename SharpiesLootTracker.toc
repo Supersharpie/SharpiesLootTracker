@@ -10,7 +10,7 @@
 ## Notes-koKR: 파밍의 실제 가치를 확인하세요: 동전, 분류별 아이템, 시간당 골드.
 ## Notes-zhTW: 看看你打寶的真正價值：錢幣、分類物品與每小時金幣。
 ## Author: SuperSharpie
-## Version: 1.0.0
+## Version: 1.1.0
 ## IconTexture: Interface\Icons\INV_Misc_Coin_02
 ## SavedVariables: SharpiesLootTrackerDB
 ## SavedVariablesPerCharacter: SharpiesLootTrackerCharDB

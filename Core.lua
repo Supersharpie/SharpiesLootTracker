@@ -69,7 +69,7 @@ end
 
 function ns.NewSession()
     -- ahValue: the part of the item value priced from the auction house (the rest is vendor value)
-    local s = { running = false, elapsed = 0, coin = 0, costs = 0, kills = 0, slotsUsed = 0, ahValue = 0, cats = {}, entries = {}, nextId = 1 }
+    local s = { running = false, elapsed = 0, coin = 0, costs = 0, kills = 0, lootedMobs = 0, slotsUsed = 0, ahValue = 0, cats = {}, entries = {}, nextId = 1 }
     for _, key in ipairs(ns.CATEGORIES) do
         s.cats[key] = { value = 0, count = 0, priciest = 0, priciestLink = nil }
     end
@@ -157,7 +157,7 @@ function ns.GetTotals(tab)
         local c = s.cats[tab]
         return { coin = 0, costs = 0, kills = 0, value = c.value, count = c.count, priciest = c.priciest, priciestLink = c.priciestLink }
     end
-    local t = { coin = s.coin, costs = s.costs, kills = s.kills, ahValue = s.ahValue, value = 0, count = 0, priciest = 0 }
+    local t = { coin = s.coin, costs = s.costs, kills = math.max(s.kills, s.lootedMobs or 0), ahValue = s.ahValue, value = 0, count = 0, priciest = 0 }
     for _, key in ipairs(ns.CATEGORIES) do
         local c = s.cats[key]
         t.value = t.value + c.value
@@ -312,6 +312,13 @@ end)
 -- =============================================================
 local SOURCES = { auto = true, tsm = true, auctionator = true, auctioneer = true, vendor = true }
 
+-- From the window's picker and /slt source
+function ns.SetPriceSource(key)
+    ns.db.priceSource = key
+    ns.Print(string.format(L["Price source: %s (applies to new loot)"], key))
+    if ns.UI then ns.UI.RefreshSource() end
+end
+
 -- on / off for a setting in chat
 local function OnOff(v) return v and L["on"] or L["off"] end
 
@@ -357,8 +364,7 @@ SlashCmdList.SHARPIESLOOTTRACKER = function(msg)
     elseif cmd == "source" then
         rest = rest:lower()
         if SOURCES[rest] then
-            ns.db.priceSource = rest
-            ns.Print(string.format(L["Price source: %s (applies to new loot)"], rest))
+            ns.SetPriceSource(rest)
         else
             ns.Print(L["Unknown source. Use auto, tsm, auctionator, auctioneer or vendor."])
         end

@@ -30,6 +30,20 @@ local SOURCES = {
 }
 local AUTO_ORDER = { "tsm", "auctionator", "auctioneer" }
 
+-- Is this source's addon there? Auto and vendor prices always work.
+function Pricing.IsAvailable(key)
+    if key == "tsm" then return (TSM_API and TSM_API.GetCustomPriceValue) and true or false end
+    if key == "auctionator" then
+        local api = Auctionator and Auctionator.API and Auctionator.API.v1
+        return (api and api.GetAuctionPriceByItemLink) and true or false
+    end
+    if key == "auctioneer" then
+        local api = AucAdvanced and AucAdvanced.API
+        return (api and api.GetMarketValue) and true or false
+    end
+    return true
+end
+
 local function GetAuctionValue(link)
     local choice = ns.db.priceSource
     if choice == "vendor" then return nil end

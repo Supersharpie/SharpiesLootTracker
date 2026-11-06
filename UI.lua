@@ -44,11 +44,13 @@ local STATS_W = 200
 local STAT_ROW_H = 15
 local ROW_H = 17             -- loot list rows
 local MIN_W, MIN_H = 400, 280
-local COMPACT_W, COMPACT_H = 340, 26
+local COMPACT_W, COMPACT_H = 430, 26
+local COMPACT_MIN_W, COMPACT_MAX_W = 240, 800
 local DOUBLE_CLICK = 0.35
 
 local frame, body, tabs, stats, listFrame, listRows, startBtn, emptyText
-local dot, clock, stateText, compactText, title, compactBtn
+local dot, clock, stateText, compactText, title, compactBtn, closeBtn, compactGrip
+local sourceBtn, sourceMenu
 local listOffset = 0
 
 local function Muted(text) return "|cff8c8c94" .. text .. "|r" end
@@ -145,7 +147,7 @@ local function SavePosition()
     local point, _, _, x, y = frame:GetPoint()
     local w = ns.char.window
     w.point, w.x, w.y = point, x, y
-    if not w.compact then w.width, w.height = frame:GetSize() end
+    if w.compact then w.compactWidth = frame:GetWidth() else w.width, w.height = frame:GetSize() end
 end
 
 -- =============================================================
@@ -174,6 +176,7 @@ local function CreateHeader()
     SetColor(compactText, T.Value)
 
     local close = IconButton(header, L["Hide (type /slt to show again)"])
+    closeBtn = close
     close:SetPoint("RIGHT", -4, 0)
     close.text = close:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     close.text:SetPoint("CENTER")
@@ -192,6 +195,10 @@ local function CreateHeader()
     compactBtn.box:SetPoint("CENTER")
     Border(compactBtn.box, T.Muted)
     compactBtn:SetScript("OnClick", function() UI.SetCompact(not ns.char.window.compact) end)
+    -- A long line stops at the buttons instead of running under them
+    compactText:SetPoint("RIGHT", compactBtn, "LEFT", -4, 0)
+    compactText:SetJustifyH("LEFT")
+    compactText:SetWordWrap(false)
 
     title = header:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     title:SetPoint("RIGHT", compactBtn, "LEFT", -6, 0)
@@ -287,7 +294,7 @@ local LAYOUT = {
 -- Hover help for numbers that need explaining
 local STAT_HINTS = {
     GPH = L["Estimated gold per hour after costs, over the whole session.\nShown after the first 2 minutes."],
-    ["Per kill"] = L["Coin and items per kill (kills that give you experience, yours or your group's)."],
+    ["Per kill"] = L["Coin and items per kill. Counts kills that give you experience, yours or your group's, or the mobs you looted if that's more."],
     Costs = L["Money spent at vendors this session (repairs, food, ammo).\n/slt costs turns this off."],
     Bags = L["Free bag slots, and roughly how long until they're full\nat this session's pace."],
 }
@@ -406,6 +413,7 @@ end
 -- Loot list
 -- =============================================================
 local SOURCE_NAMES = { vendor = L["vendor"], tsm = "TSM", auctionator = "Auctionator", auctioneer = "Auctioneer" }
+local SOURCE_ORDER = { "auto", "tsm", "auctionator", "auctioneer", "vendor" }
 
 local function VisibleRowCount()
     return math.max(1, math.floor((listFrame:GetHeight() - 4) / ROW_H))
@@ -476,6 +484,86 @@ local function CreateList()
 end
 
 -- =============================================================
+-- Price source picker
+-- =============================================================
+local function SourceLabel(key)
+    if key == "auto" then return L["Auto"] end
+    if key == "vendor" then return L["Vendor"] end
+    return SOURCE_NAMES[key] or key
+end
+
+local function RefreshSourceMenu()
+    for _, row in ipairs(sourceMenu.rows) do
+        local available = ns.Pricing.IsAvailable(row.key)
+        row:SetEnabled(available)
+        row.text:SetText(SourceLabel(row.key) .. (available and "" or (" " .. Muted("(" .. L["Not installed"] .. ")"))))
+        SetColor(row.text, row.key == ns.db.priceSource and T.Accent or (available and T.Text or T.Muted))
+    end
+end
+
+local function CreateSourcePicker(after)
+    sourceBtn = FlatButton(body, "", 130, 20)
+    sourceBtn:SetPoint("LEFT", after, "RIGHT", 6, 0)
+    sourceBtn.text:SetFontObject("GameFontHighlightSmall")
+    sourceBtn.text:ClearAllPoints()
+    sourceBtn.text:SetPoint("LEFT", 6, 0)
+    sourceBtn.text:SetPoint("RIGHT", -14, 0)
+    sourceBtn.text:SetJustifyH("LEFT")
+    sourceBtn.text:SetWordWrap(false)
+    local arrow = sourceBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    arrow:SetPoint("RIGHT", -5, 0)
+    arrow:SetText("v")
+    SetColor(arrow, T.Muted)
+    sourceBtn:HookScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:SetText(L["Where item prices come from. Applies to new loot."], 1, 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    sourceBtn:HookScript("OnLeave", HideTooltip)
+
+    sourceMenu = CreateFrame("Frame", nil, body)
+    sourceMenu:SetFrameStrata("DIALOG")
+    sourceMenu:SetClampedToScreen(true)
+    sourceMenu:EnableMouse(true)
+    sourceMenu:SetSize(200, #SOURCE_ORDER * 18 + 4)
+    sourceMenu:SetPoint("BOTTOMLEFT", sourceBtn, "TOPLEFT", 0, 2)
+    Solid(sourceMenu, "BACKGROUND", T.Window, 1):SetAllPoints()
+    Border(sourceMenu, T.Edge)
+    sourceMenu.rows = {}
+    for i, key in ipairs(SOURCE_ORDER) do
+        local row = CreateFrame("Button", nil, sourceMenu)
+        row.key = key
+        row:SetHeight(18)
+        row:SetPoint("TOPLEFT", 2, -2 - (i - 1) * 18)
+        row:SetPoint("TOPRIGHT", -2, -2 - (i - 1) * 18)
+        Solid(row, "HIGHLIGHT", { 1, 1, 1 }, 0.08):SetAllPoints()
+        row.text = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        row.text:SetPoint("LEFT", 6, 0)
+        row:SetScript("OnClick", function()
+            ns.SetPriceSource(key)
+            sourceMenu:Hide()
+        end)
+        sourceMenu.rows[i] = row
+    end
+    sourceMenu:Hide()
+    sourceMenu:SetScript("OnShow", RefreshSourceMenu)
+    -- A click anywhere else closes it
+    sourceMenu:SetScript("OnUpdate", function(self)
+        if (IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton")) and not self:IsMouseOver() and not sourceBtn:IsMouseOver() then
+            self:Hide()
+        end
+    end)
+    body:HookScript("OnHide", function() sourceMenu:Hide() end)
+    sourceBtn:SetScript("OnClick", function() sourceMenu:SetShown(not sourceMenu:IsShown()) end)
+end
+
+function UI.RefreshSource()
+    if not sourceBtn then return end
+    sourceBtn.text:SetText(string.format(L["Prices: %s"], SourceLabel(ns.db.priceSource)))
+    if sourceMenu:IsShown() then RefreshSourceMenu() end
+end
+
+-- =============================================================
 -- Public
 -- =============================================================
 function UI.Create()
@@ -531,6 +619,9 @@ function UI.Create()
         StaticPopup_Show("SHARPIESLOOTTRACKER_RESET")
     end)
 
+    CreateSourcePicker(resetBtn)
+    UI.RefreshSource()
+
     StaticPopupDialogs["SHARPIESLOOTTRACKER_RESET"] = {
         text = L["Reset the current loot session?"],
         button1 = YES, button2 = NO,
@@ -546,6 +637,16 @@ function UI.Create()
     grip:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
     grip:SetScript("OnMouseDown", function() AnchorTopLeft(); frame:StartSizing("BOTTOMRIGHT") end)
     grip:SetScript("OnMouseUp", function() frame:StopMovingOrSizing(); SavePosition(); UI.Refresh() end)
+
+    -- The compact bar's own grip: width only (its height is fixed by the resize bounds)
+    compactGrip = CreateFrame("Button", nil, frame)
+    compactGrip:SetSize(12, 12)
+    compactGrip:SetPoint("BOTTOMRIGHT", -1, 1)
+    compactGrip:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
+    compactGrip:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
+    compactGrip:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
+    compactGrip:SetScript("OnMouseDown", function() AnchorTopLeft(); frame:StartSizing("BOTTOMRIGHT") end)
+    compactGrip:SetScript("OnMouseUp", function() frame:StopMovingOrSizing(); SavePosition(); UI.Refresh() end)
 
     frame:SetScript("OnSizeChanged", function()
         LayoutTabs()
@@ -586,7 +687,16 @@ function UI.SetCompact(on)
     compactText:SetShown(w.compact)
     compactBtn.bar:SetShown(not w.compact)
     compactBtn.box:SetShown(w.compact)
-    if w.compact then frame:SetSize(COMPACT_W, COMPACT_H) else frame:SetSize(w.width, w.height) end
+    compactGrip:SetShown(w.compact)
+    closeBtn:ClearAllPoints()
+    closeBtn:SetPoint("RIGHT", w.compact and -14 or -4, 0)   -- leaves room for the grip
+    if w.compact then
+        Compat.SetResizeBounds(frame, COMPACT_MIN_W, COMPACT_H, COMPACT_MAX_W, COMPACT_H)
+        frame:SetSize(w.compactWidth or COMPACT_W, COMPACT_H)
+    else
+        Compat.SetResizeBounds(frame, MIN_W, MIN_H, 900, 700)
+        frame:SetSize(w.width, w.height)
+    end
     SavePosition()
     UI.Refresh()
 end

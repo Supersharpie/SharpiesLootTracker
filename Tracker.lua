@@ -202,7 +202,7 @@ end
 -- Kills, while the session runs: counted from the "X dies, you gain N experience" message (every kill that gives you
 -- experience, yours or your group's). WoW Forever forbids addons from registering COMBAT_LOG_EVENT_UNFILTERED
 -- (ADDON_ACTION_FORBIDDEN at load), so the combat log's PARTY_KILL can't be used. Kills that give no experience
--- (grey mobs, level 60) aren't counted.
+-- (grey mobs, level 60) aren't counted here; NoteLootedMobs covers those.
 local function FormatToPattern(fmt)
     if type(fmt) ~= "string" or fmt == "" then return nil end
     local p = fmt:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1")
@@ -219,6 +219,26 @@ local function NoteKill(text)
     if not Compat.IsReadableString(text) or not text:match(KILL_PATTERN) then return end
     local s = ns.char and ns.char.session
     if s and s.running then s.kills = s.kills + 1 end
+end
+
+-- Looted mobs: each corpse once, by its GUID in the loot window (one window can hold several with area loot). Per kill uses
+-- this when it's more than the experience kills (ns.GetTotals). Counted whenever this loot would run the session: the loot
+-- message that starts or resumes it comes after the window opens.
+local countedMobs = {}
+local function NoteLootedMobs()
+    if not (GetNumLootItems and GetLootSourceInfo) then return end
+    local s = ns.char and ns.char.session
+    if not (s and (s.running or s.autoPaused or (ns.db.autoStart and not s.paused))) then return end
+    for slot = 1, GetNumLootItems() do
+        local sources = { GetLootSourceInfo(slot) } -- guid, quantity, guid, quantity, ...
+        for i = 1, #sources, 2 do
+            local guid = sources[i]
+            if Compat.IsReadableString(guid) and guid:find("^Creature%-") and not countedMobs[guid] then
+                countedMobs[guid] = true
+                s.lootedMobs = (s.lootedMobs or 0) + 1
+            end
+        end
+    end
 end
 
 -- Bag fill rate: count slots that fill up while farming (not while shopping or at the bank)
@@ -267,7 +287,7 @@ tracker:SetScript("OnEvent", function(_, event, arg1, arg2, arg3)
     end
     -- Loading screens close every window; clear any close event we missed (e.g. a disconnect)
     if event == "PLAYER_ENTERING_WORLD" then wipe(blockers) moneyAtVendor = nil NoteBagSlots() return end
-    if event == "LOOT_READY" or event == "LOOT_OPENED" then NoteItemSourcedLoot() return end
+    if event == "LOOT_READY" or event == "LOOT_OPENED" then NoteItemSourcedLoot() NoteLootedMobs() return end
     if event == "LOOT_CLOSED" then wipe(seenInWindow) return end
     if event == "BAG_UPDATE_DELAYED" then NoteBagSlots() return end
     if event == "PLAYER_MONEY" then

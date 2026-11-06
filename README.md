@@ -1,6 +1,6 @@
 # Sharpie's Loot Tracker
 
-**Version 1.0.0** | Works on **WoW Forever**
+**Version 1.1.0** | Works on **WoW Forever**
 
 **See what your farm is really worth:** coin, items by category, and gold per hour.
 
@@ -15,8 +15,8 @@ Start farming and it tracks your session on its own: what dropped, what it's wor
 - **Idle pause:** no loot for 5 minutes, or going AFK, pauses the timer as of your last loot. The next loot carries on.
 - **Bags:** free slots and roughly how long until they're full, with an alert when they fill up.
 - **Big drop alert:** a sound and on-screen warning for a drop worth 5g or more.
-- **Per kill:** coin and items per kill. Kills are counted when they give you experience, so grey mobs and kills at max level aren't counted.
-- **Compact bar:** one line with state, time, gold per hour and bags. Use the button in the header or double-click it.
+- **Per kill:** coin and items per kill. It counts kills that give you experience, or the mobs you looted if that's more, so it works on grey mobs and at max level too.
+- **Compact bar:** one line with state, time, gold per hour and bags. Use the button in the header or double-click it, and drag its corner to change the width.
 - **Report:** post a one-line summary to your group, guild or a friend.
 - **Ignore list:** Ctrl-right-click a row to always ignore that item. Quest items are ignored by default.
 

@@ -1,5 +1,14 @@
 # Sharpie's Loot Tracker - Version History
 
+## 🚀 v1.1.0
+
+### ✨ New
+- **Price source picker:** a Prices button at the bottom of the window picks where item prices come from: Auto, TSM, Auctionator, Auctioneer or Vendor. Addons you don't have are greyed out. `/slt source` still works.
+- **Resizable compact bar:** drag its bottom-right corner to change the width. It's wider by default, and long text now stops at the buttons instead of running under them.
+
+### 🐛 Fixes
+- **Per kill** now works on grey mobs and at max level. It also counts the mobs you loot and uses whichever is higher, the kills that give you experience or the mobs you looted. At max level, mobs you don't loot still aren't counted.
+
 ## 🚀 v1.0.0
 
 First public release, for WoW Forever.
