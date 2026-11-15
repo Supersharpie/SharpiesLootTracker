@@ -299,7 +299,8 @@ tracker:SetScript("OnEvent", function(_, event, arg1, arg2, arg3)
     if event == "CHAT_MSG_LOOT" then
         if next(blockers) or not Compat.IsReadableString(arg1) then return end
         local link, qty = ParseItemMessage(arg1)
-        if not link or SkipItemSourced(link) or ns.IsIgnored(link) then return end
+        if not link then return end
+        if SkipItemSourced(link) or ns.IsIgnored(link) then ns.NoteActivity() return end
         if ns.EnsureRunning() then RecordWhenLoaded(ns.char.session, link, qty) end
     elseif event == "CHAT_MSG_MONEY" then
         if not Compat.IsReadableString(arg1) then return end

@@ -1,6 +1,6 @@
 # Sharpie's Loot Tracker
 
-**Version 1.1.0** | Works on **WoW Forever**
+**Version 1.1.1** | Works on **WoW Forever**
 
 **See what your farm is really worth:** coin, items by category, and gold per hour.
 
@@ -12,7 +12,7 @@ Start farming and it tracks your session on its own: what dropped, what it's wor
 - **Tabs:** All, Mats, Gear, Junk and Other, each with an item count.
 - **Prices from your auction addon:** TradeSkillMaster, Auctionator or Auctioneer, or vendor prices if you have none. The All tab splits item value into auction house and vendor. Hover a row to see where its price came from.
 - **Costs:** money spent at vendors (repairs, food, ammo) comes off your gold per hour.
-- **Idle pause:** no loot for 5 minutes, or going AFK, pauses the timer as of your last loot. The next loot carries on.
+- **Idle pause:** no loot for 5 minutes, or going AFK, pauses the timer as of your last loot. Quest items and ignored items count as loot here. The next loot carries on.
 - **Bags:** free slots and roughly how long until they're full, with an alert when they fill up.
 - **Big drop alert:** a sound and on-screen warning for a drop worth 5g or more.
 - **Per kill:** coin and items per kill. It counts kills that give you experience, or the mobs you looted if that's more, so it works on grey mobs and at max level too.

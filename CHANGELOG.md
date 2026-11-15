@@ -1,5 +1,10 @@
 # Sharpie's Loot Tracker - Version History
 
+## 🚀 v1.1.1
+
+### 🐛 Fixes
+- **Idle pause** no longer fires while you're looting quest items or items you ignore. Any loot now counts as activity, though only recorded loot starts a new session.
+
 ## 🚀 v1.1.0
 
 ### ✨ New

@@ -140,6 +140,17 @@ function ns.EnsureRunning()
     return true
 end
 
+-- Loot that isn't recorded (quest items, ignored items) still shows you're farming: it keeps
+-- the idle clock from running out and carries on after an idle pause, but never starts a session
+function ns.NoteActivity()
+    local s = ns.char.session
+    if s.running then
+        ns.lastLootAt = GetTime()
+    elseif s.autoPaused then
+        ns.Start()
+    end
+end
+
 function ns.Toggle()
     if ns.char.session.running then ns.Pause() else ns.Start() end
 end
